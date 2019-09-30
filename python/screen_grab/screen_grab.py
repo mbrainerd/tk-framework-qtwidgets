@@ -252,25 +252,16 @@ class ExternalCaptureThread(QtCore.QThread):
         return self._error
 
     def run(self):
+        bundle = sgtk.platform.current_bundle()
         try:
-            if sys.platform == "darwin":
-                # use built-in screenshot command on the mac
-                ret_code = os.system("screencapture -m -i -s %s" % self._path)
-                if ret_code != 0:
-                    raise sgtk.TankError("Screen capture tool returned error code %s" % ret_code)
-
-            elif sys.platform == "linux2":
-                # use image magick
-                ret_code = os.system("import %s" % self._path)
-                if ret_code != 0:
-                    raise sgtk.TankError("Screen capture tool returned error code %s. "
-                                         "For screen capture to work on Linux, you need to have "
-                                         "the imagemagick 'import' executable installed and "
-                                         "in your PATH." % ret_code)
-
-            else:
-                raise sgtk.TankError("Unsupported platform.")
+            bundle.execute_hook_method(
+                "external_screenshot_hook",
+                "capture_screenshot",
+                path=self._path,
+            )
         except Exception, e:
+            import traceback
+            bundle.log_error(traceback.format_exc())
             self._error = str(e)
 
 
